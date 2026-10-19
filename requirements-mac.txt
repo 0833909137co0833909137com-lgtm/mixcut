@@ -1,0 +1,9 @@
+# macOS Apple Silicon (M1/M2/M3) dependencies for the MixCut desktop app.
+# Installed on the GitHub Actions macos-14 (arm64) runner during packaging.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+open-clip-torch==3.3.0
+faster-whisper==1.2.1
+pyyaml
+pyinstaller

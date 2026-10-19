@@ -1,0 +1,25 @@
+# Subtitle templates (ASS styles). Colors are &HAABBGGRR.
+styles:
+  pop:          # 爆款黄字：黄字黑边，底部，微阴影
+    font: "Arial"
+    size: 64
+    primary: "&H0000FFFF"
+    outline: "&H80000000"
+    back: "&H00000000"
+    outline_width: 3
+    shadow: 1
+    alignment: 2
+    margin_v: 90
+    bold: true
+
+  clean:        # 简约白字
+    font: "Arial"
+    size: 60
+    primary: "&H00FFFFFF"
+    outline: "&H80000000"
+    back: "&H00000000"
+    outline_width: 2
+    shadow: 0
+    alignment: 2
+    margin_v: 80
+    bold: true
