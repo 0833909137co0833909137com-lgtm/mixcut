@@ -1,0 +1,64 @@
+name: Build macOS (Apple Silicon) app
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["mac-v*"]
+
+jobs:
+  build:
+    runs-on: macos-14  # Apple Silicon M1 runner
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-mac.txt
+
+      - name: Patch faster-whisper for PyAV>=15
+        run: |
+          FW=$(python -c "import faster_whisper, os; print(os.path.dirname(faster_whisper.__file__))")
+          sed -i '' 's/, metadata_errors="ignore"//' "$FW/audio.py"
+          grep -n "av.open" "$FW/audio.py"
+
+      - name: Download CLIP weights (bundled into the app)
+        run: |
+          mkdir -p models
+          curl -L --retry 3 -o models/clip-vit-b32-laion.bin \
+            https://huggingface.co/laion/CLIP-ViT-B-32-laion2B-s34B-b79K/resolve/main/open_clip_pytorch_model.bin
+          ls -la models/
+
+      - name: Fetch static ffmpeg (arm64) + font
+        run: |
+          mkdir -p bin fonts
+          pip install static-ffmpeg
+          FFBIN=$(python -c "from static_ffmpeg import run; p,_=run.get_or_fetch_platform_executables_else_raise(); print(p)")
+          FPPBIN=$(python -c "from static_ffmpeg import run; _,p=run.get_or_fetch_platform_executables_else_raise(); print(p)")
+          cp "$FFBIN" bin/ffmpeg
+          cp "$FPPBIN" bin/ffprobe
+          chmod +x bin/ffmpeg bin/ffprobe
+          ./bin/ffmpeg -version | head -1
+          curl -L --retry 3 -o fonts/DejaVuSans.ttf \
+            https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf
+
+      - name: Build MixCut.app with PyInstaller
+        run: |
+          pyinstaller mixcut.spec
+          ls -la dist/
+
+      - name: Make DMG
+        run: |
+          hdiutil create -volname MixCut -srcfolder dist/MixCut.app \
+            -ov -format UDZO MixCut-mac-arm64.dmg
+          ls -la *.dmg
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MixCut-mac-arm64
+          path: MixCut-mac-arm64.dmg
